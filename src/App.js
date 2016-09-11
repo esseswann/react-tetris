@@ -34,6 +34,19 @@ const newError = (message) => {
   throw message
 }
 
+const createFigure = (fromID = 0, color = randomColor()) => {
+  let id = fromID
+  let blocks = {}
+  forEach(randomType(), (row, y) =>
+    forEach(row, (col, x) => {
+        if (col) {
+          blocks[id] = {color, x, y}
+          id++
+        }
+      }))
+  return blocks
+}
+
 const column = (x, blocks) =>
   pickBy(blocks, block => block.x === x)
 
@@ -113,18 +126,9 @@ const Tetris = React.createClass({
   },
 
   create(type) {
-    const color     = randomColor()
     let id          = max(map(keys(this.state.blocks), key => toNumber(key))) + 1 || 1
-    const newBlocks = {}
-    const active    = []
-    forEach(randomType(), (row, y) =>
-      forEach(row, (col, x) => {
-          if (col) {
-            active.push(id)
-            newBlocks[id] = {color, x, y, parent: 1}
-            id++
-          }
-        }))
+    const newBlocks = createFigure(id)
+    const active    = keys(newBlocks)
     this.set(newBlocks, active)
   },
 
@@ -235,13 +239,12 @@ const Tetris = React.createClass({
   },
 
   newGame() {
-    this.setState({
-      active: [],
-      score:  0,
-      blocks: {}
-    })
-    this.create()
+    const blocks = createFigure()
+    const active = keys(blocks)
+    this.setState({blocks, active, score: 0})
+    window.addEventListener('keydown', this.listen)
     this.fall()
+
   },
 
   userMove(direction) {
@@ -297,7 +300,9 @@ const Tetris = React.createClass({
           : <div>
               <h1>Game over</h1>
               <div>Score {this.state.score}</div>
-              <div onClick={this.newGame}>New</div>
+              <div
+                style   = {{background: randomColor(), padding: '8px 16px', textAlign: 'center', color: 'white', textTransform: 'uppercase'}}
+                onClick = {this.newGame}>New</div>
             </div>
           }
       </div>
