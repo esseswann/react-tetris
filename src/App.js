@@ -60,30 +60,35 @@ const transfer = (blocks, id, x, y) => {
   return newBlocks
 }
 
-const moveOne = (blocks, id, direction) => {
+const moveOne = (blocks, id, direction, by = 1) => {
   let newPosition = {x: blocks[id].x, y: blocks[id].y}
   switch (direction) {
     case 'up':
-      newPosition.y--
+      newPosition.y -= by
     break
     case 'down':
-      newPosition.y++
+      newPosition.y += by
     break
     case 'left':
-      newPosition.x--
+      newPosition.x -= by
     break
     case 'right':
-      newPosition.x++
+      newPosition.x += by
     break
   }
   return transfer(blocks, id, newPosition.x, newPosition.y)
 }
 
-const move = (blocks, ids, direction) => {
+const move = (blocks, ids, direction, by = 1) => {
   ids.length
-    ? forEach(ids, id => blocks = moveOne(blocks, id, direction))
+    ? forEach(ids, id => blocks = moveOne(blocks, id, direction, by))
     : moveOne(blocks, ids, direction)
   return blocks
+}
+
+const center = (blocks, width) => {
+  const xs = map(blocks, block => block.x)
+  return move(blocks, keys(blocks), 'right', width / 2 - max(xs) - min(xs))
 }
 
 const Tetris = React.createClass({
@@ -127,7 +132,7 @@ const Tetris = React.createClass({
 
   create(type) {
     let id          = max(map(keys(this.state.blocks), key => toNumber(key))) + 1 || 1
-    const newBlocks = createFigure(id)
+    const newBlocks = center(createFigure(id), this.state.width)
     const active    = keys(newBlocks)
     this.set(newBlocks, active)
   },
@@ -239,7 +244,8 @@ const Tetris = React.createClass({
   },
 
   newGame() {
-    const blocks = createFigure()
+    let blocks   = createFigure()
+    blocks       = center(blocks, this.state.width)
     const active = keys(blocks)
     this.setState({blocks, active, score: 0})
     window.addEventListener('keydown', this.listen)
