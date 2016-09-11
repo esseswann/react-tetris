@@ -81,18 +81,20 @@ const Tetris = React.createClass({
       size:   16,
       active: [],
       score:  0,
-      blocks: {}
+      blocks: {},
+      speed:  1000,
     }
   },
 
   componentDidMount() {
     this.create()
     this.fall()
-    window.addEventListener('keydown', (e) => {
-        if (dic[e.key] !== undefined)
-          this.userMove(dic[e.key])
-      }
-    )
+    window.addEventListener('keydown', this.listen)
+  },
+
+  listen(e) {
+    if (dic[e.key] !== undefined)
+      this.userMove(dic[e.key])
   },
 
   get(ids) {
@@ -103,11 +105,11 @@ const Tetris = React.createClass({
     return merge({}, result)
   },
 
-  set(blocks, active = this.state.active) {
-    this.setState({
-      active: active,
-      blocks: merge(this.state.blocks, blocks)
-    })
+  set(newBlocks, active = this.state.active) {
+    const blocks = merge({}, this.state.blocks, newBlocks)
+    this.intersects(active, blocks)
+      ? this.gameOver()
+      : this.setState({active, blocks})
   },
 
   create(type) {
@@ -205,7 +207,6 @@ const Tetris = React.createClass({
     // const directions = ['left', 'right', 'top']
     //
     // const check = (blocksToCheck, i) => {
-    //   console.log(i)
     //   if (i <= 2)
     //     this.intersects(blockKeys, blocksToCheck)
     //       ? check(move(blocks, blockKeys, directions[i] + 1), i + 1)
@@ -219,13 +220,28 @@ const Tetris = React.createClass({
 
   fall() {
     const currentFall = () => {
-      console.log(this.state.active)
       this.move(this.state.active, 'down') ||
      (this.drop(),
       this.create())
     }
 
-    window.setInterval(currentFall, 1000)
+    this.setState({motor: window.setInterval(currentFall, this.state.speed)})
+  },
+
+  gameOver() {
+    window.clearInterval(this.state.motor)
+    window.removeEventListener('keydown', this.listen)
+    this.setState({motor: null})
+  },
+
+  newGame() {
+    this.setState({
+      active: [],
+      score:  0,
+      blocks: {}
+    })
+    this.create()
+    this.fall()
   },
 
   userMove(direction) {
@@ -258,8 +274,7 @@ const Tetris = React.createClass({
   },
 
   render() {
-    return <div>
-      <div>{this.state.score}</div>
+    return <div style={{display: 'flex'}}>
       <div style   = {{
         position:   'relative',
         background: '#004D40',
@@ -267,6 +282,24 @@ const Tetris = React.createClass({
         height:     this.state.height * this.state.size}}>
         {map(this.state.blocks, (block, key) =>
           <Block {...block} key={key} size={this.state.size} />)}
+      </div>
+      <div  style={{padding: '16px'}}>
+        {this.state.motor
+          ? <div>
+              <h1>{this.state.score}</h1>
+              <div style={{color: 'gray'}}>
+                <div>← Left</div>
+                <div>→ Right</div>
+                <div>↑ Rotate</div>
+                <div>↓ Drop</div>
+            </div>
+            </div>
+          : <div>
+              <h1>Game over</h1>
+              <div>Score {this.state.score}</div>
+              <div onClick={this.newGame}>New</div>
+            </div>
+          }
       </div>
     </div>
   }
