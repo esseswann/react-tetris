@@ -103,9 +103,9 @@ const Tetris = React.createClass({
     return merge({}, result)
   },
 
-  set(blocks) {
+  set(blocks, active = this.state.active) {
     this.setState({
-      active: keys(blocks),
+      active: active,
       blocks: merge(this.state.blocks, blocks)
     })
   },
@@ -114,14 +114,16 @@ const Tetris = React.createClass({
     const color     = randomColor()
     let id          = max(map(keys(this.state.blocks), key => toNumber(key))) + 1 || 1
     const newBlocks = {}
+    const active    = []
     forEach(randomType(), (row, y) =>
       forEach(row, (col, x) => {
           if (col) {
+            active.push(id)
             newBlocks[id] = {color, x, y, parent: 1}
             id++
           }
         }))
-    this.set(newBlocks)
+    this.set(newBlocks, active)
   },
 
   transfer(id, x, y) {
@@ -132,7 +134,6 @@ const Tetris = React.createClass({
   },
 
   intersects(ids, blocks) {
-    console.log(ids.length)
     const intersectsOne = (id) =>
       find(omit(blocks, id), block => block.x === blocks[id].x && block.y === blocks[id].y) ? true : false
     const outOfBounds = (id) => {
@@ -160,7 +161,6 @@ const Tetris = React.createClass({
   move(ids, direction) {
     const blocks = move(this.state.blocks, ids, direction)
     if (this.intersects(ids, blocks)) {
-      console.log('test')
       return false
     } else {
       this.setState({blocks})
@@ -219,6 +219,7 @@ const Tetris = React.createClass({
 
   fall() {
     const currentFall = () => {
+      console.log(this.state.active)
       this.move(this.state.active, 'down') ||
      (this.drop(),
       this.create())
